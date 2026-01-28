@@ -425,11 +425,11 @@
         <div class="main-content">
             <!-- Step 1: Upload -->
             <div class="step active" id="step1">
-                <h2 style="color: #1e3c72; margin-bottom: 20px;">Step 1: Upload Your IRS Notice</h2>
+                <h2 style="color: #1e3c72; margin-bottom: 20px;">Analyze Your IRS Notice</h2>
                 
                 <div class="info-card">
                     <h3 style="margin-bottom: 10px;">📋 What We'll Tell You</h3>
-                    <p>Upload a clear photo or PDF of your IRS notice. We'll analyze it and tell you:</p>
+                    <p>Enter your IRS notice code and we'll tell you:</p>
                     <ul style="margin: 10px 0; padding-left: 20px;">
                         <li>What type of notice you received</li>
                         <li>What the IRS wants from you</li>
@@ -439,28 +439,68 @@
                     </ul>
                 </div>
 
-                <div class="upload-zone" id="uploadZone">
-                    <div class="upload-icon">📤</div>
-                    <h3>Drag & Drop Your IRS Notice Here</h3>
-                    <p style="margin: 15px 0;">or click to browse</p>
-                    <p style="font-size: 0.9em; color: #666;">Accepts: PDF, JPG, PNG (Max 10MB)</p>
-                    <input type="file" id="fileInput" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <!-- Manual Entry Option -->
+                <div class="question-box" style="margin: 25px 0;">
+                    <div class="question">Enter Your Notice Code</div>
+                    
+                    <div style="background: #e8f4f8; padding: 20px; border-radius: 10px; margin: 15px 0;">
+                        <h4 style="color: #1e3c72; margin-bottom: 15px;">📍 Where to Find Your Notice Number:</h4>
+                        <p style="margin-bottom: 15px;">Look at the <strong>top-right corner</strong> of your IRS letter. You should see something like:</p>
+                        
+                        <div style="background: white; padding: 20px; border: 2px solid #667eea; border-radius: 8px; margin: 15px 0; font-family: 'Courier New', monospace;">
+                            <div style="text-align: right; color: #666; font-size: 0.9em;">
+                                <p>Notice: <strong style="color: #1e3c72; font-size: 1.2em;">CP14</strong></p>
+                                <p>Notice date: December 15, 2024</p>
+                                <p>Social Security number: XXX-XX-1234</p>
+                            </div>
+                        </div>
+                        
+                        <p style="margin-top: 15px;"><strong>Common formats:</strong></p>
+                        <ul style="padding-left: 20px; margin-top: 10px;">
+                            <li>CP### (e.g., CP14, CP501, CP2000)</li>
+                            <li>LT## (e.g., LT11, LT16)</li>
+                            <li>Letter #### (e.g., Letter 1058, Letter 3172)</li>
+                        </ul>
+                    </div>
+                    
+                    <input type="text" id="directNoticeInput" class="text-input" placeholder="Enter notice code (e.g., CP14, CP501, Letter 1058)" style="font-size: 1.2em; padding: 15px; margin-top: 10px;">
                 </div>
 
-                <div id="filePreview" style="display: none; margin: 20px 0;">
-                    <div class="success-box">
-                        <h3>✓ File Uploaded Successfully</h3>
-                        <p id="fileName"></p>
+                <div class="question-box">
+                    <div class="question">What is this notice about?</div>
+                    <div class="radio-option" onclick="selectRadio(this, 'balance-due')">
+                        <input type="radio" name="noticeTypeDirect" value="balance-due">
+                        <label>You owe money / Balance due</label>
+                    </div>
+                    <div class="radio-option" onclick="selectRadio(this, 'changes')">
+                        <input type="radio" name="noticeTypeDirect" value="changes">
+                        <label>IRS made changes to your return</label>
+                    </div>
+                    <div class="radio-option" onclick="selectRadio(this, 'levy')">
+                        <input type="radio" name="noticeTypeDirect" value="levy">
+                        <label>Intent to levy / Seize assets</label>
+                    </div>
+                    <div class="radio-option" onclick="selectRadio(this, 'payment-plan')">
+                        <input type="radio" name="noticeTypeDirect" value="payment-plan">
+                        <label>Payment plan issue / Default notice</label>
+                    </div>
+                    <div class="radio-option" onclick="selectRadio(this, 'review')">
+                        <input type="radio" name="noticeTypeDirect" value="review">
+                        <label>Return under review / Need information</label>
+                    </div>
+                    <div class="radio-option" onclick="selectRadio(this, 'other')">
+                        <input type="radio" name="noticeTypeDirect" value="other">
+                        <label>Something else / Not sure</label>
                     </div>
                 </div>
 
-                <div class="warning-box">
-                    <h4 style="margin-bottom: 10px;">🔒 Your Privacy Matters</h4>
-                    <p>We analyze your notice to provide guidance. Your document is processed securely and not stored on our servers.</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="processDirectInput()" style="font-size: 1.2em; padding: 18px 40px;">Analyze My Notice →</button>
                 </div>
 
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="analyzeBtn" disabled>Analyze My Notice</button>
+                <div class="warning-box" style="margin-top: 25px;">
+                    <h4 style="margin-bottom: 10px;">🔒 Your Privacy Matters</h4>
+                    <p>We don't store any of your information. This tool provides guidance based on the notice type you enter.</p>
                 </div>
             </div>
 
@@ -2136,6 +2176,73 @@
             document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
             element.classList.add('selected');
             element.querySelector('input').checked = true;
+        }
+
+        function processDirectInput() {
+            const noticeNumber = document.getElementById('directNoticeInput').value.trim().toUpperCase();
+            const noticeType = document.querySelector('input[name="noticeTypeDirect"]:checked')?.value;
+
+            if (!noticeType) {
+                alert('Please select what your notice is about.');
+                return;
+            }
+
+            let matchedNotice = null;
+            
+            // Clean up notice number (remove spaces, handle "Letter" prefix)
+            let cleanNoticeNumber = noticeNumber.replace(/\s+/g, '').replace(/^LETTER/i, 'Letter');
+            
+            // Try exact match first
+            if (cleanNoticeNumber && noticeDatabase[cleanNoticeNumber]) {
+                matchedNotice = noticeDatabase[cleanNoticeNumber];
+            } 
+            // Try without "CP" prefix variations
+            else if (cleanNoticeNumber) {
+                // Try adding CP if it's just numbers
+                if (/^\d+[A-Z]?$/.test(cleanNoticeNumber)) {
+                    if (noticeDatabase['CP' + cleanNoticeNumber]) {
+                        matchedNotice = noticeDatabase['CP' + cleanNoticeNumber];
+                    }
+                }
+                // Try Letter variations
+                if (!matchedNotice && /^(LTR?|LETTER)\s*(\d+[A-Z]?)$/i.test(cleanNoticeNumber)) {
+                    const letterNum = cleanNoticeNumber.replace(/^(LTR?|LETTER)\s*/i, '');
+                    if (noticeDatabase['Letter' + letterNum]) {
+                        matchedNotice = noticeDatabase['Letter' + letterNum];
+                    }
+                }
+            }
+            
+            // If still no match but they entered a notice number, create a dynamic fallback
+            if (!matchedNotice && cleanNoticeNumber) {
+                matchedNotice = createFallbackNotice(cleanNoticeNumber, noticeType);
+            }
+            // Last resort: match by type
+            else if (!matchedNotice) {
+                matchedNotice = matchByType(noticeType);
+            }
+
+            if (matchedNotice) {
+                noticeData = matchedNotice;
+                goToStep(3);
+                
+                // Restore loading spinner in step3
+                const step3 = document.getElementById('step3');
+                step3.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <h3 style="color: #1e3c72;">Analyzing Your Notice...</h3>
+                        <p style="margin-top: 10px; color: #666;">This will take just a moment</p>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    displayResults();
+                    goToStep(4);
+                }, 1500);
+            } else {
+                alert('We couldn\'t identify your specific notice. Please try again or contact us for help.');
+            }
         }
 
         function processManualInput() {
